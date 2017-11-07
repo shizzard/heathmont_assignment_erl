@@ -1,0 +1,4 @@
+[{<<"fitter">>,
+  {git,"https://github.com/shizzard/fitter.git",
+       {ref,"d041863cee37d4b9b8549ecdd5f4c0bb5d4ef4ab"}},
+  0}].

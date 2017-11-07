@@ -1,0 +1,11 @@
+{application, ex_banking, [
+    {description, "Heathmont test assignment"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {ex_banking_app, []}},
+    {applications, [kernel, stdlib]},
+    {env,[]},
+    {modules, []},
+
+    {maintainers, ["Denis Fakhrtdinov <me@shizz.ru>"]}
+]}.

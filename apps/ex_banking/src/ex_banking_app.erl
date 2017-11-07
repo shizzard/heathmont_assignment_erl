@@ -12,7 +12,10 @@
 
 
 start(_StartType, _StartArgs) ->
-    ex_banking_sup:start_link().
+    {ok, Sup} = ex_banking_sup:start_link(),
+    {ok, ShardsCount} = application:get_env(ex_banking, shards_count),
+    _ = [{ok, _Pid} = supervisor:start_child(ex_banking_sup, [ShardId]) || ShardId <- lists:seq(1, ShardsCount)],
+    {ok, Sup}.
 
 
 

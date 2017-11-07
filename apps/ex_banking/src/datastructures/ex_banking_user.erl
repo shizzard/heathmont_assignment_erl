@@ -2,7 +2,7 @@
 -dialyzer({nowarn_function, [get_account/2, set_account/3]}).
 
 -export([
-    new/1, id/1, get_balance/2, get_operations_count/2,
+    new/1, id/1, get_balance/2, get_operations_count/1, get_operations_count/2,
     plan_deposit/3, plan_withdraw/3, commit/3, rollback/3
 ]).
 
@@ -15,7 +15,7 @@
 }).
 
 -type id() :: binary().
--opaque user() :: #user{}.
+-type user() :: #user{}.
 
 -export_type([id/0, user/0]).
 
@@ -54,6 +54,18 @@ id(#user{id = Id}) ->
 get_balance(#user{accounts = Accounts}, Currency)
 when is_binary(Currency) ->
     ex_banking_account:amount(get_account(Accounts, Currency)).
+
+
+
+-spec get_operations_count(
+    User :: user()
+) ->
+    Ret :: non_neg_integer().
+
+get_operations_count(#user{accounts = Accounts}) ->
+    dict:fold(fun(_Currency, Account, Acc) ->
+        Acc + ex_banking_account:operations_count(Account)
+    end, 0, Accounts).
 
 
 

@@ -19,5 +19,14 @@ start_link() ->
 
 
 init([]) ->
-    {ok, {{one_for_all, 0, 1}, []}}.
-
+    SupFlags = #{
+        strategy => simple_one_for_one,
+        intensity => 1,
+        period => 1
+    },
+    ChildSpecs = [#{
+        id => call,
+        start => {ex_banking_shard, start_link, []},
+        shutdown => 5000
+    }],
+    {ok, {SupFlags, ChildSpecs}}.

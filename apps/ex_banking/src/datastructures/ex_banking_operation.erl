@@ -12,7 +12,7 @@
 -type type_deposit() :: deposit.
 -type type_withdraw() :: withdraw.
 -type type() :: type_deposit() | type_withdraw().
--opaque operation() :: #operation{}.
+-type operation() :: #operation{}.
 
 -export_type([id/0, operation/0]).
 

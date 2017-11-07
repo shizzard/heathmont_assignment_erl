@@ -20,7 +20,7 @@
 
 -type currency() :: binary().
 -type amount() :: non_neg_integer().
--opaque account() :: #account{}.
+-type account() :: #account{}.
 
 -export_type([currency/0, amount/0, account/0]).
 

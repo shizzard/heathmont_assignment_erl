@@ -24,6 +24,7 @@ dialyze:
 
 test:
 	$(REBAR) eunit
+	$(REBAR) ct
 
 run-release:
 	_build/default/rel/ex_banking/bin/ex_banking console

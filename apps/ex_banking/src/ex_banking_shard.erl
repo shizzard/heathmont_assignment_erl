@@ -174,7 +174,7 @@ init(_) ->
 
 handle_call(?create_user(UserId), _GenReplyTo, #state{ets = Ets} = S0) ->
     safe_apply(
-        UserId,
+        UserId, false,
         fun(_User) ->
             {error, user_already_exists}
         end,
@@ -186,7 +186,7 @@ handle_call(?create_user(UserId), _GenReplyTo, #state{ets = Ets} = S0) ->
 
 handle_call(?get_balance(UserId, Currency), _GenReplyTo, #state{ets = _Ets} = S0) ->
     safe_apply(
-        UserId,
+        UserId, false,
         fun(User) ->
             {ok, integer_to_amount(ex_banking_user:get_balance(User, Currency))}
         end,
@@ -197,7 +197,7 @@ handle_call(?get_balance(UserId, Currency), _GenReplyTo, #state{ets = _Ets} = S0
 
 handle_call(?plan_deposit(UserId, FloatingPointAmount, Currency), _GenReplyTo, #state{ets = Ets} = S0) ->
     safe_apply(
-        UserId,
+        UserId, true,
         fun(User) ->
             Amount = amount_to_integer(FloatingPointAmount),
             {ok, {Operation, User1}} = ex_banking_user:plan_deposit(User, Currency, Amount),
@@ -211,7 +211,7 @@ handle_call(?plan_deposit(UserId, FloatingPointAmount, Currency), _GenReplyTo, #
 
 handle_call(?plan_withdraw(UserId, FloatingPointAmount, Currency), _GenReplyTo, #state{ets = Ets} = S0) ->
     safe_apply(
-        UserId,
+        UserId, true,
         fun(User) ->
             Amount = amount_to_integer(FloatingPointAmount),
             case ex_banking_user:plan_withdraw(User, Currency, Amount) of
@@ -229,7 +229,7 @@ handle_call(?plan_withdraw(UserId, FloatingPointAmount, Currency), _GenReplyTo, 
 
 handle_call(?commit(UserId, Currency, Operation), _GenReplyTo, #state{ets = Ets} = S0) ->
     safe_apply(
-        UserId,
+        UserId, false,
         fun(User) ->
             case ex_banking_user:commit(User, Currency, Operation) of
                 {ok, User1} ->
@@ -246,7 +246,7 @@ handle_call(?commit(UserId, Currency, Operation), _GenReplyTo, #state{ets = Ets}
 
 handle_call(?rollback(UserId, Currency, Operation), _GenReplyTo, #state{ets = Ets} = S0) ->
     safe_apply(
-        UserId,
+        UserId, false,
         fun(User) ->
             case ex_banking_user:rollback(User, Currency, Operation) of
                 {ok, User1} ->
@@ -295,6 +295,7 @@ code_change(_OldVsn, S0, _Extra) ->
 
 -spec safe_apply(
     UserId :: ex_banking_user:id(),
+    DoCheckOperationsCount :: boolean(),
     IfExistsFun :: fun((User :: ex_banking_user:user()) -> term()),
     IfDoesNotExistFun :: fun(() -> term()),
     S0 :: state()
@@ -307,17 +308,18 @@ code_change(_OldVsn, S0, _Extra) ->
         State :: state()
     ).
 
-safe_apply(UserId, IfExistsFun, IfDoesNotExistFun, #state{ets = Ets} = S0) ->
+safe_apply(UserId, DoCheckOperationsCount, IfExistsFun, IfDoesNotExistFun, #state{ets = Ets} = S0) ->
     try
         case ets:lookup(Ets, UserId) of
             [] ->
                 {reply, IfDoesNotExistFun(), S0};
             [User] ->
-                case ex_banking_user:get_operations_count(User) of
-                    N when N < 10 ->
-                        {reply, IfExistsFun(User), S0};
-                    _TooMuch ->
-                        {reply, {error, too_many_requests_to_user}, S0}
+                case {ex_banking_user:get_operations_count(User), DoCheckOperationsCount} of
+                    {TooMuch, true} when TooMuch >= 10 ->
+                        lager:info("Too many requests to user ~p", [User]),
+                        {reply, {error, too_many_requests_to_user}, S0};
+                    {_N, _} ->
+                        {reply, IfExistsFun(User), S0}
                 end
         end
     catch

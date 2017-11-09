@@ -17,7 +17,9 @@ all() ->
         can_get_wrong_arguments_on_negative_send_test,
         can_get_wrong_arguments_on_invalid_currency_send_test,
         can_get_too_many_requests_to_sender,
-        can_get_too_many_requests_to_receiver
+        can_get_too_many_requests_to_receiver,
+        can_get_10th_send_complete,
+        can_get_11th_get_balance_complete
     ].
 
 
@@ -113,10 +115,10 @@ can_get_too_many_requests_to_sender(Config) ->
     User2 = proplists:get_value(user2, Config),
     User1Shard = ex_banking:get_shard_by_user_id(User1),
     _ = [
-        {ok, _Op} = ex_banking_shard:plan_deposit(User1Shard, User1, 0.1, <<"USD">>)
+        {ok, _Op} = ex_banking_shard:plan_deposit(User1Shard, User1, 1.0, <<"USD">>)
         || _ <- lists:seq(1,10)
     ],
-    {error, too_many_requests_to_sender} = ex_banking:send(User1, User2, 1.12, <<"USD">>).
+    {error, too_many_requests_to_sender} = ex_banking:send(User1, User2, 1.0, <<"USD">>).
 
 
 
@@ -129,3 +131,26 @@ can_get_too_many_requests_to_receiver(Config) ->
         || _ <- lists:seq(1,10)
     ],
     {error, too_many_requests_to_receiver} = ex_banking:send(User1, User2, 1.12, <<"USD">>).
+
+
+
+can_get_10th_send_complete(Config) ->
+    User1 = proplists:get_value(user1, Config),
+    User2 = proplists:get_value(user2, Config),
+    User1Shard = ex_banking:get_shard_by_user_id(User1),
+    _ = [
+        {ok, _Op} = ex_banking_shard:plan_deposit(User1Shard, User1, 1.0, <<"USD">>)
+        || _ <- lists:seq(1,9)
+    ],
+    {ok, 99.0, 1.0} = ex_banking:send(User1, User2, 1.0, <<"USD">>).
+
+
+
+can_get_11th_get_balance_complete(Config) ->
+    User1 = proplists:get_value(user1, Config),
+    User1Shard = ex_banking:get_shard_by_user_id(User1),
+    _ = [
+        {ok, _Op} = ex_banking_shard:plan_deposit(User1Shard, User1, 1.0, <<"USD">>)
+        || _ <- lists:seq(1,10)
+    ],
+    {ok, 100.0} = ex_banking:get_balance(User1, <<"USD">>).

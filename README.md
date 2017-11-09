@@ -4,6 +4,8 @@ This application was written as a solution to [Heathmont's elixir test](https://
 
 **TL;DR**: Tested on erlang 20.0. `make all test dialyze` to test, `make all run-release` to run.
 
+See also [Standalone `ex_banking` application](https://github.com/shizzard/ex_banking_erl) that may be used as a dependency to elixir umbrella project.
+
 ## Data structures
 
 Application uses three different data structures: `operation`, `account` and `user`. All data structures are covered with some unit tests in [`test`](apps/ex_banking/test) directory (`*_tests.erl`).
@@ -43,6 +45,8 @@ Application contains somehow naive implementation of two-phase transaction mecha
 Race conditions (creating new users) and concurrency control (operations) problems are solved with a pool of worker shards that are started on application bootstrap (see [`ex_banking_shard.erl`](apps/ex_banking/src/ex_banking_shard.erl)). Operations for every single user are being processed on a single worker, chosen with consistent hashing algorithm. Thus, all operations for every single user are serialized. NB: shard also holds a limitation for maximum 10 operations per user.
 
 Common tests suites may be found in [`test`](apps/ex_banking/test) directory (`*_SUITE.erl`).
+
+One [special test suite](apps/ex_banking/test/concurrent_SUITE.erl) was added to check if system holds the requirements. This test starts 1000 users performing 1000 operations each before terminate.
 
 ## Supervision tree
 
